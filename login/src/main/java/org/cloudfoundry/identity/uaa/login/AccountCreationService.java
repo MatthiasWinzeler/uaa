@@ -14,7 +14,7 @@ public interface AccountCreationService {
 
     ScimUser createUser(String username, String password);
 
-    public static class ExistingUserResponse {
+    class ExistingUserResponse {
         @JsonProperty
         private String error;
 
@@ -71,7 +71,7 @@ public interface AccountCreationService {
         }
     }
 
-    public static class AccountCreationResponse {
+    class AccountCreationResponse {
         @JsonProperty("user_id")
         private String userId;
         private String username;

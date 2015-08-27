@@ -162,7 +162,7 @@ public class EmailAccountCreationService implements AccountCreationService {
         email.setPrimary(true);
         email.setValue(username);
         scimUser.setEmails(Arrays.asList(email));
-        scimUser.setOrigin(Origin.UAA);
+        scimUser.setOrigin(Origin.UNKNOWN);
         scimUser.setPassword(password);
         try {
             ScimUser userResponse = scimUserProvisioning.createUser(scimUser, password);
@@ -174,7 +174,7 @@ public class EmailAccountCreationService implements AccountCreationService {
             throw new UaaException("Couldn't create user:"+username, x);
         }
     }
-    
+
     private String getSubjectText() {
         return brand.equals("pivotal") && IdentityZoneHolder.isUaa() ? "Activate your Pivotal ID" : "Activate your account";
     }
