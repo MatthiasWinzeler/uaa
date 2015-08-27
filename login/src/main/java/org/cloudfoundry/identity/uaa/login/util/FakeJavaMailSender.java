@@ -1,5 +1,5 @@
 /*******************************************************************************
- *     Cloud Foundry 
+ *     Cloud Foundry
  *     Copyright (c) [2009-2014] Pivotal Software, Inc. All Rights Reserved.
  *
  *     This product is licensed to you under the Apache License, Version 2.0 (the "License").
@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -35,10 +36,23 @@ public class FakeJavaMailSender implements JavaMailSender {
 
     private final Session session;
     private final ArrayList<MimeMessageWrapper> sentMessages;
+    private volatile int maxMessages = 1000;
 
     public FakeJavaMailSender() {
         session = Session.getInstance(new Properties());
         sentMessages = new ArrayList<>();
+    }
+
+    public int getMaxMessages() {
+        return maxMessages;
+    }
+
+    public void setMaxMessages(int maxMessages) {
+        if (maxMessages<0) {
+            this.maxMessages = 0;
+        } else {
+            this.maxMessages = maxMessages;
+        }
     }
 
     @Override
@@ -52,13 +66,23 @@ public class FakeJavaMailSender implements JavaMailSender {
     }
 
     @Override
-    public void send(MimeMessage mimeMessage) throws MailException {
-        sentMessages.add(new MimeMessageWrapper(mimeMessage));
+    public synchronized void send(MimeMessage mimeMessage) throws MailException {
+        if (getMaxMessages()>0) {
+            sentMessages.add(new MimeMessageWrapper(mimeMessage));
+        }
+
+        while (sentMessages.size()>getMaxMessages()) {
+            sentMessages.remove(0);
+        }
     }
 
     @Override
     public void send(MimeMessage[] mimeMessages) throws MailException {
-        throw new UnsupportedOperationException();
+        if (mimeMessages!=null) {
+            for (MimeMessage m : mimeMessages) {
+                send(m);
+            }
+        }
     }
 
     @Override
@@ -81,8 +105,8 @@ public class FakeJavaMailSender implements JavaMailSender {
         throw new UnsupportedOperationException();
     }
 
-    public ArrayList<MimeMessageWrapper> getSentMessages() {
-        return sentMessages;
+    public List<MimeMessageWrapper> getSentMessages() {
+        return Collections.unmodifiableList(sentMessages);
     }
 
     public static class MimeMessageWrapper {
@@ -103,6 +127,10 @@ public class FakeJavaMailSender implements JavaMailSender {
 
         public String getContentString() throws MessagingException, IOException {
             return StreamUtils.copyToString(mimeMessage.getDataHandler().getInputStream(), Charset.forName("UTF-8"));
+        }
+
+        public MimeMessage getMessage() {
+            return mimeMessage;
         }
     }
 }
